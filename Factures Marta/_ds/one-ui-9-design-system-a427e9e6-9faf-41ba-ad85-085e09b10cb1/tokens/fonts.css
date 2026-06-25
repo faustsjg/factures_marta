@@ -1,0 +1,15 @@
+/* ───────────────────────────────────────────────────────────
+   FONTS
+   Samsung's system typeface is "One UI Sans" (formerly SamsungOne /
+   SamsungSharpSans), which is proprietary and not redistributable.
+   We substitute Hanken Grotesk — the closest free humanist grotesque
+   with the same open apertures, round bowls and slightly soft
+   terminals — loaded from Google Fonts.
+   ▶ SUBSTITUTION FLAGGED: replace with real One UI Sans webfonts if
+     you have a license; just point --font-sans at the new family.
+   ─────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&family=Hanken+Grotesk:wght@300..800&display=swap');
+
+/* Monospace fallback uses the platform mono stack (Samsung Gothic mono
+   has no free equivalent). */

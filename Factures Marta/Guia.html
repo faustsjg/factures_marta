@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia — Posar Factures Marta en línia</title>
+<style>
+:root{
+--bg:#EDEEF2; --card:#fff; --ink:#1d2128; --ink2:#5b616e;
+--blue:#1C6FE0; --yellow:#F5C556; --teal:rgb(107,176,173); --navy:rgb(32,46,66);
+--line:rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;}
+body{
+margin:0; background:var(--bg);
+font-family:"Hanken Grotesk",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+color:#1d2128; line-height:1.55;
+padding:40px 20px 80px;
+}
+.wrap{max-width:760px;margin:0 auto;}
+.head{display:flex;align-items:center;gap:14px;margin-bottom:8px;}
+.badge{width:56px;height:56px;border-radius:14px;display:block;}
+.brand{line-height:1.05;}
+.brand .f{font-size:26px;font-weight:800;color:var(--teal);display:block;}
+.brand .l{font-size:16px;font-weight:800;color:var(--navy);display:block;}
+h1{font-size:30px;font-weight:800;letter-spacing:-.02em;margin:26px 0 6px;}
+.lead{color:#5b616e;font-size:16px;margin:0 0 30px;}
+.card{
+background:var(--card);border-radius:22px;padding:26px 26px 22px;margin-bottom:22px;
+box-shadow:0 6px 22px -12px rgba(30,40,60,.18);
+}
+.card h2{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a909c;margin:0 0 4px;}
+.card h3{font-size:21px;font-weight:800;letter-spacing:-.01em;margin:0 0 16px;}
+ol{margin:0;padding-left:0;counter-reset:step;list-style:none;}
+ol>li{
+position:relative;padding:0 0 18px 44px;margin:0;
+}
+ol>li:last-child{padding-bottom:0;}
+ol>li::before{
+counter-increment:step;content:counter(step);
+position:absolute;left:0;top:-2px;width:30px;height:30px;border-radius:50%;
+background:var(--blue);color:#fff;font-weight:700;font-size:15px;
+display:flex;align-items:center;justify-content:center;
+}
+ol.amber>li::before{background:var(--yellow);color:#3a2d0c;}
+ol.teal>li::before{background:var(--teal);}
+li b{font-weight:700;}
+.muted{color:#5b616e;font-size:14.5px;}
+code,.path{
+font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:13.5px;
+background:#f0f1f4;border-radius:7px;padding:2px 7px;color:#1d2128;
+word-break:break-word;
+}
+pre{
+background:#1d2128;color:#e8eaf0;border-radius:14px;padding:16px 18px;overflow:auto;
+font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:13px;line-height:1.5;margin:12px 0 0;
+}
+.note{
+display:flex;gap:12px;background:#FFF8E6;border:1px solid #F2D98A;border-radius:14px;
+padding:14px 16px;font-size:14.5px;color:#5a4a16;margin-top:16px;
+}
+.note.blue{background:#EAF2FE;border-color:#BBD4F7;color:#1b4a86;}
+.note b{font-weight:700;}
+a{color:var(--blue);}
+.kbd{background:#fff;border:1px solid var(--line);border-radius:7px;padding:1px 7px;font-size:13px;font-weight:600;box-shadow:0 1px 0 var(--line);}
+.tag{display:inline-block;background:#eef0f4;border-radius:8px;padding:2px 9px;font-size:12.5px;font-weight:600;color:#5b616e;margin-left:6px;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="head">
+<img class="badge" src="assets/icon-256.png" alt="">
+<div class="brand"><span class="f">Marta</span><span class="l">San José Gispert</span></div>
+</div>
+
+<h1>Posar l'app en línia, pas a pas</h1>
+<p class="lead">Tres parts: <b>1)</b> Firebase (les teves dades al núvol + login) · <b>2)</b> GitHub (publicar l'app) · <b>3)</b> instal·lar-la a l'iPhone. Uns 15 minuts en total.</p>
+
+<div class="card">
+<h2>Part 1</h2>
+<h3>Firebase — dades al núvol i login</h3>
+<ol>
+<li>Entra a <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> amb el teu compte de Google i clica <b>Crear un projecte</b>. Posa-li un nom (p. ex. <i>factures-marta</i>), accepta i continua. Pots <b>desactivar</b> Google Analytics, no cal.</li>
+<li>Dins el projecte, clica la icona web <span class="tag">&lt;/&gt;</span> ("Add app" → Web). Posa-li un sobrenom i clica <b>Registrar app</b>. Et mostrarà un bloc <code>const firebaseConfig = {…}</code> amb 6 línies.</li>
+<li>Copia aquests 6 valors (<code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, <code>storageBucket</code>, <code>messagingSenderId</code>, <code>appId</code>) i enganxa'ls al fitxer <span class="path">firebase-config.js</span>, substituint els textos <code>PEGA_…</code>.</li>
+<li>Al menú lateral: <b>Build → Authentication → Get started</b>. A la pestanya <b>Sign-in method</b>, activa <b>Email/Password</b> i desa.</li>
+<li>A la pestanya <b>Users</b>, clica <b>Add user</b>. Posa el teu correu i una contrasenya: <b>aquest serà el teu únic usuari</b> (el que faràs servir per entrar a l'app).</li>
+<li>Al menú: <b>Build → Firestore Database → Create database</b>. Tria <b>Production mode</b> i una ubicació europea (p. ex. <code>eur3</code>). Crea-la.</li>
+<li>A la pestanya <b>Rules</b> de Firestore, enganxa exactament això i clica <b>Publish</b>:</li>
+</ol>
+<pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null
+                         &amp;&amp; request.auth.uid == uid;
+    }
+  }
+}</pre>
+<div class="note blue">
+<span>🔒</span>
+<div><b>És segur?</b> Sí. Les 6 línies de <code>firebase-config.js</code> no són secretes (van sempre al navegador). El que protegeix les teves dades és el <b>login</b> + aquestes <b>Rules</b>: només el teu usuari pot llegir o escriure les teves dades.</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Part 2</h2>
+<h3>GitHub — publicar l'app gratis</h3>
+<ol class="amber">
+<li>Crea un compte a <a href="https://github.com" target="_blank">github.com</a> (si no en tens). Després clica <b>New repository</b>, posa-li un nom (p. ex. <i>factures</i>), deixa'l <b>Public</b> i crea'l.</li>
+<li>Puja <b>tots</b> els fitxers del projecte (botó <b>Descarregar projecte</b> de baix → descomprimeix → arrossega-ho tot a la pàgina del repo a <b>Add file → Upload files</b>). Important: inclou les carpetes <span class="path">_ds</span> i <span class="path">assets</span> senceres.</li>
+<li>Al repo: <b>Settings → Pages</b>. A <b>Source</b> tria <b>Deploy from a branch</b>, branca <code>main</code>, carpeta <code>/ (root)</code>, i <b>Save</b>.</li>
+<li>Espera 1–2 minuts. La teva app quedarà a:<br><code>https://EL-TEU-USUARI.github.io/factures/app.html</code></li>
+</ol>
+<div class="note">
+<span>💡</span>
+<div>Cada cop que vulguis canviar alguna cosa, torna a pujar els fitxers modificats. Si edites <code>firebase-config.js</code>, l'app es reconnecta sola.</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Part 3</h2>
+<h3>Instal·lar-la a l'iPhone</h3>
+<ol class="teal">
+<li>Obre la URL <code>…github.io/factures/app.html</code> amb <b>Safari</b> (ha de ser Safari, no Chrome).</li>
+<li>Toca el botó <b>Compartir</b> <span class="kbd">↑</span> i tria <b>Afegir a la pantalla d'inici</b>.</li>
+<li>Obre l'app des de la nova icona. Et demanarà el <b>login</b> (el correu i contrasenya del pas 1.5).</li>
+<li>Repeteix al PC obrint la mateixa URL i fent login: <b>veuràs exactament les mateixes dades</b>, sincronitzades a l'instant.</li>
+</ol>
+</div>
+
+<div class="card">
+<h3>Bo per saber</h3>
+<p class="muted" style="margin-top:0;">
+• Mentre no enganxis la config de Firebase, l'app funciona en <b>mode local</b> (només en aquest dispositiu) — així mai queda bloquejada.<br>
+• El botó <b>Còpia de seguretat</b> segueix funcionant com a còpia extra i per endur-te les dades.<br>
+• Per <b>tancar la sessió</b>: obre <b>Còpia de seguretat</b> → <b>Tancar sessió</b>.<br>
+• Funciona <b>sense connexió</b>: els canvis es guarden i es sincronitzen quan tornis a tenir internet.
+</p>
+</div>
+
+</div>
+</body>
+</html>
