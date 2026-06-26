@@ -1,4 +1,4 @@
-const firebaseConfig = {
+window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyAiEjzfEUJZKdigoDShIbnXryyrl0VHRD4",
   authDomain: "factures-marta.firebaseapp.com",
   projectId: "factures-marta",
