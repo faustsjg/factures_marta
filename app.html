@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<title>Factures Marta</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F5C556">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Factures">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<!-- One UI 9 Design System — tokens combinats en un sol fitxer -->
+<link rel="stylesheet" href="ds-tokens.css?v=1">
+
+<link rel="stylesheet" href="styles.css?v=93">
+</head>
+
+<body data-view="table" data-navlabels="off">
+
+<div id="loginScreen" class="login-screen">
+<div class="login-card">
+<span class="login-badge">
+<img src="assets/logo-badge.png?v=2" alt="Marta San José Gispert">
+</span>
+<div class="login-brand">
+<span class="login-first">Marta</span>
+<span class="login-last">San José Gispert</span>
+</div>
+<p class="login-sub">Inicia la sessió per accedir a les teves dades</p>
+
+<label class="login-field">
+<span>Correu</span>
+<input type="email" id="loginEmail" autocomplete="username" inputmode="email" placeholder="el-teu-correu@exemple.com">
+</label>
+
+<label class="login-field">
+<span>Contrasenya</span>
+<input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••">
+</label>
+
+<div class="login-error" id="loginError"></div>
+
+<button class="btn blue login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+
+<p class="login-localnote hidden" id="loginLocalNote">
+Mode local actiu — Firebase encara no està configurat. Les dades es desen només en aquest dispositiu.
+</p>
+</div>
+</div>
+
+<div class="appheader">
+
+<div class="title-row">
+
+<span class="logo-badge">
+<img src="assets/logo-badge.png?v=2" alt="Marta San José Gispert">
+</span>
+
+<div class="brand-name">
+<span class="brand-first">Marta</span>
+<span class="brand-last">San José Gispert</span>
+</div>
+
+</div>
+
+<div class="header-tools">
+<button class="backup-cta" onclick="openBackupModal()">
+<svg class="bc-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l4 4v12a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8"></path><path d="M7 3v4h8"></path></svg>
+<span class="bc-title">Còpia de seguretat</span>
+</button>
+<button class="backup-cta" onclick="openImportModal()">
+<svg class="bc-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14.5 17.5h6M17.5 14.5v6"></path></svg>
+<span class="bc-title">Importar dades</span>
+</button>
+</div>
+
+</div>
+
+<input type="file" id="importFile" class="hidden" onchange="importTXT(event)">
+
+<div class="card data-card" id="dataCard">
+
+<div class="data-card-head" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px;margin-bottom:20px;">
+
+<nav id="classesSubnav" class="config-subnav" aria-label="Vista">
+<div class="subnav-pill" id="classesSubnavPill"></div>
+<button id="csub-table" onclick="setClassView('table')" title="Taula">
+<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="6" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="4" cy="11" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="4" cy="16" r="1.4" fill="currentColor" stroke="none"></circle><path d="M9 6h9"></path><path d="M9 11h9"></path><path d="M9 16h9"></path></svg>
+<span>Taula</span>
+</button>
+<button id="csub-calendar" onclick="setClassView('calendar')" title="Calendari">
+<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="3.8" width="16.8" height="15.2" rx="2.4"></rect><path d="M2.6 8.2h16.8"></path><path d="M7 2.2v3.4"></path><path d="M15 2.2v3.4"></path></svg>
+<span>Calendari</span>
+</button>
+</nav>
+
+<div id="calendarControls" class="hidden" style="display:flex;gap:6px;align-items:center;justify-content:center;">
+
+<div class="cal-title-btn" id="calendarTitle" onclick="openMonthPicker()" title="Canviar mes i any"></div>
+
+</div>
+
+<div id="tableControls" style="display:flex;align-items:center;margin-left:auto;">
+
+<div class="view-tools">
+<div class="tool-search-inline" id="toolSearchInline">
+<input type="text" id="searchInputTop" class="tool-search-field" placeholder="Cerca curs, mòdul o data…" oninput="setSearch(this.value)" autocomplete="off" aria-label="Cerca">
+<button class="btn gray icon tool-search" onclick="toggleSearch()" title="Cerca" aria-label="Cerca">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+</button>
+</div>
+<button class="btn gray icon tool-filter" onclick="toggleFilter(this)" title="Filtra per curs" aria-label="Filtra">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"></line><line x1="4" y1="16" x2="20" y2="16"></line><circle cx="9" cy="8" r="2.4" fill="var(--surface-strong)"></circle><circle cx="15" cy="16" r="2.4" fill="var(--surface-strong)"></circle></svg>
+</button>
+</div>
+
+<button id="invoiceBtn" class="btn blue" onclick="openInvoiceModal()" title="Generar factura">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.8" width="13" height="16.4" rx="2"></rect><path d="M8 7h6"></path><path d="M8 10.5h6"></path><path d="M8 14h3.5"></path></svg>
+<span class="btn-add-label">Generar factura</span>
+</button>
+
+<button class="btn green btn-add" onclick="openClassModal()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+<span class="btn-add-label">Afegir classe</span>
+</button>
+
+</div>
+
+</div>
+
+<div id="searchRow" class="search-row hidden">
+<div class="search-box">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5l4 4"></path></svg>
+<input type="text" id="searchInput" placeholder="Cerca per curs, mòdul o data…" oninput="setSearch(this.value)" autocomplete="off">
+<button class="search-clear hidden" id="searchClear" onclick="clearSearch()" title="Esborrar" aria-label="Esborrar cerca">
+<svg width="14" height="14" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+</div>
+</div>
+
+<div id="filterPopup" class="filter-popup hidden">
+<div class="filter-popup-head">
+<span>Filtres</span>
+<button class="filter-clear" onclick="clearFilter()">Treu filtres</button>
+</div>
+
+<div class="filter-section">
+<div class="filter-label">Curs</div>
+<div class="filter-chips" id="filterChips"></div>
+</div>
+
+<div class="filter-section">
+<div class="filter-label">Mòdul</div>
+<div class="filter-chips" id="filterModuleChips"></div>
+</div>
+
+<div class="filter-section">
+<div class="filter-label">Dates</div>
+<div class="filter-range">
+<input type="date" id="filterDateFrom" oninput="setDateFilter()" aria-label="Des de">
+<span class="filter-range-sep">–</span>
+<input type="date" id="filterDateTo" oninput="setDateFilter()" aria-label="Fins a">
+</div>
+</div>
+
+<div class="filter-section">
+<div class="filter-label">Facturació (€)</div>
+<div class="filter-range">
+<input type="number" id="filterAmtMin" placeholder="Mín" oninput="setRangeFilter()" aria-label="Import mínim">
+<span class="filter-range-sep">–</span>
+<input type="number" id="filterAmtMax" placeholder="Màx" oninput="setRangeFilter()" aria-label="Import màxim">
+</div>
+</div>
+
+<div class="filter-section">
+<div class="filter-label">Durada (h)</div>
+<div class="filter-range">
+<input type="number" id="filterHrsMin" placeholder="Mín" oninput="setRangeFilter()" aria-label="Hores mínimes">
+<span class="filter-range-sep">–</span>
+<input type="number" id="filterHrsMax" placeholder="Màx" oninput="setRangeFilter()" aria-label="Hores màximes">
+</div>
+</div>
+</div>
+
+<div id="tableView">
+
+<table>
+
+<thead>
+
+<tr>
+<th><input type="checkbox" id="selectAllClasses" onchange="toggleSelectAll()" title="Seleccionar tot"></th>
+<th>Data</th>
+<th>Curs</th>
+<th>Hores</th>
+<th>€/h</th>
+<th>Import</th>
+<th></th>
+</tr>
+
+</thead>
+
+<tbody id="classesTable"></tbody>
+
+</table>
+
+</div>
+
+<div id="calendarView" class="hidden">
+
+<div class="swipe-hint" id="swipeHint">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 5l-5 6 5 6"></path></svg>
+Llisca per canviar de mes
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 6-5 6"></path></svg>
+</div>
+
+<div class="calendar" id="calendarGrid"></div>
+
+</div>
+
+</div>
+
+<div id="configView" class="hidden">
+
+<div class="config-wrap">
+
+<div id="coursesPage" class="config-page card">
+
+<div class="config-page-head config-head-row">
+<button class="btn green btn-add" onclick="openAddCourseModal()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+<span class="btn-add-label">Afegir curs</span>
+</button>
+</div>
+
+<div id="coursesList"></div>
+
+</div>
+
+<div id="clientsPage" class="config-page card hidden">
+
+<div class="config-page-head config-head-row">
+<button class="btn green btn-add" onclick="openAddClientModal()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+<span class="btn-add-label">Afegir client</span>
+</button>
+</div>
+
+<div id="clientsList"></div>
+
+</div>
+
+<div id="issuersPage" class="config-page card hidden">
+
+<div class="config-page-head config-head-row">
+<button class="btn green btn-add" onclick="openAddIssuerModal()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+<span class="btn-add-label">Afegir emissor</span>
+</button>
+</div>
+
+<div id="issuersList"></div>
+
+</div>
+
+</div>
+
+</div>
+
+<div id="ledgerView" class="hidden">
+
+<div class="card data-card">
+
+<div class="ledger-head">
+
+<div class="ledger-tabs" id="ledgerTabs">
+<div class="subnav-pill" id="ledgerTabsPill"></div>
+<button id="ledgerTab-income" class="active" onclick="setLedgerTab('income')">
+<svg width="19" height="19" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3.5v9"></path><path d="M6.8 8.3 11 12.5l4.2-4.2"></path><path d="M4.5 17h13"></path></svg>
+<span>Ingressos</span>
+</button>
+<button id="ledgerTab-expense" onclick="setLedgerTab('expense')">
+<svg width="19" height="19" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12.5v-9"></path><path d="M6.8 7.7 11 3.5l4.2 4.2"></path><path d="M4.5 17h13"></path></svg>
+<span>Despeses</span>
+</button>
+</div>
+
+<div class="ledger-head-actions">
+<button class="btn gray icon tool-filter" id="ledgerFilterBtn" onclick="toggleLedgerFilter(this)" title="Filtrar per període" aria-label="Filtrar">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="8" x2="20" y2="8"></line><line x1="4" y1="16" x2="20" y2="16"></line><circle cx="9" cy="8" r="2.4" fill="var(--surface-strong)"></circle><circle cx="15" cy="16" r="2.4" fill="var(--surface-strong)"></circle></svg>
+</button>
+<button class="btn blue btn-add" onclick="exportLedgerXLSX()" title="Genera el llibre en Excel">
+<svg width="17" height="17" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3v10"></path><path d="M6.5 8.5 11 13l4.5-4.5"></path><path d="M4 15.5v2A1.5 1.5 0 0 0 5.5 19h11a1.5 1.5 0 0 0 1.5-1.5v-2"></path></svg>
+<span class="btn-add-label">Exportar Excel</span>
+</button>
+<button class="btn green btn-add" id="ledgerAddBtn" onclick="openInvoiceRecordModal()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+<span class="btn-add-label" id="ledgerAddLabel">Afegir factura</span>
+</button>
+</div>
+
+</div>
+
+<div id="ledgerFilterPop" class="filter-popup hidden">
+<div class="filter-popup-head">
+<span>Període</span>
+<button class="filter-clear" onclick="clearLedgerFilter()">Any actual</button>
+</div>
+<div class="filter-section">
+<div class="filter-label">Any</div>
+<select id="ledgerYear" class="ledger-select" onchange="renderLedger()" aria-label="Any"></select>
+</div>
+<div class="filter-section">
+<div class="filter-label">Trimestre</div>
+<select id="ledgerQuarter" class="ledger-select" onchange="renderLedger()" aria-label="Trimestre">
+<option value="">Any sencer</option>
+<option value="1">1r trimestre</option>
+<option value="2">2n trimestre</option>
+<option value="3">3r trimestre</option>
+<option value="4">4t trimestre</option>
+</select>
+</div>
+</div>
+
+<div id="ledgerIncome">
+<div class="ledger-table-wrap">
+<table class="ledger-table">
+<thead><tr><th>Data</th><th>Nº</th><th>Client</th><th>NIF</th><th class="num">Base</th><th class="num">IVA</th><th class="num">IRPF</th><th class="num">Total</th><th></th></tr></thead>
+<tbody id="incomeRows"></tbody>
+</table>
+</div>
+</div>
+
+<div id="ledgerExpense" class="hidden">
+<div class="ledger-table-wrap">
+<table class="ledger-table">
+<thead><tr><th>Data</th><th>Proveïdor</th><th>NIF</th><th>Categoria</th><th class="num">Base</th><th class="num">IVA</th><th class="num">Quota</th><th class="num">Total</th><th></th></tr></thead>
+<tbody id="expenseRows"></tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+
+<nav id="bottomNav" class="bottom-nav">
+
+<div class="nav-pill" id="navPill"></div>
+
+<div class="nav-cell">
+
+<button class="nav-item active" id="nav-classes" data-view="classes" onclick="navClick('classes')" title="Classes">
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="3.8" width="16.8" height="15.2" rx="2.4"></rect><path d="M2.6 8.2h16.8"></path><path d="M7 2.2v3.4"></path><path d="M15 2.2v3.4"></path><path d="M5.6 12h1.2"></path><path d="M10.4 12h1.2"></path><path d="M15.2 12h1.2"></path><path d="M5.6 15.4h1.2"></path><path d="M10.4 15.4h1.2"></path></svg>
+<span class="nav-label">Classes</span>
+</button>
+
+</div>
+
+<button class="nav-item" id="nav-ledger" data-view="ledger" onclick="navClick('ledger')" title="Comptabilitat">
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3.4h9.5a2.4 2.4 0 0 1 2.4 2.4v12.8H6.4A2.4 2.4 0 0 1 4 16.2z"></path><path d="M16 3.4h1.6a2.4 2.4 0 0 1 2.4 2.4v12.8h-4"></path><path d="M7 7.4h5.5"></path><path d="M7 10.6h5.5"></path></svg>
+<span class="nav-label">Comptes</span>
+</button>
+
+<div class="nav-cell">
+
+<button class="nav-item" id="nav-settings" data-view="settings" onclick="navClick('settings')" title="Configuració">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+<span class="nav-label">Configuració</span>
+</button>
+
+</div>
+
+</nav>
+
+<nav id="configSubnav" class="config-subnav hidden" aria-label="Configuració">
+<div class="subnav-pill" id="subnavPill"></div>
+<button id="subnav-courses" onclick="goConfig('courses')">
+<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="6.6" height="6.6" rx="1.8"></rect><rect x="12.4" y="3" width="6.6" height="6.6" rx="1.8"></rect><rect x="3" y="12.4" width="6.6" height="6.6" rx="1.8"></rect><rect x="12.4" y="12.4" width="6.6" height="6.6" rx="1.8"></rect></svg>
+<span>Cursos</span>
+</button>
+<button id="subnav-clients" onclick="goConfig('clients')">
+<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="7" r="3.6"></circle><path d="M4.2 19c.9-3.6 3.6-5.4 6.8-5.4s5.9 1.8 6.8 5.4"></path></svg>
+<span>Clients</span>
+</button>
+<button id="subnav-issuers" onclick="goConfig('issuers')">
+<svg width="20" height="20" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="2.8" width="13" height="16.4" rx="2"></rect><path d="M8 7.5h6"></path><path d="M8 11h6"></path><path d="M8 14.5h3.5"></path></svg>
+<span>Emissors</span>
+</button>
+</nav>
+
+<div class="modal" id="backupModal">
+
+<div class="modal-content" style="max-width:560px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+
+<h2 style="font-size:26px;font-weight:700;">
+Còpia de seguretat
+</h2>
+
+<button class="modal-close" onclick="closeBackupModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<p class="small" style="margin-bottom:18px;">
+Les dades es guarden en un fitxer <strong>.txt</strong> al teu dispositiu. Carrega'l per restaurar-les en qualsevol moment.
+</p>
+
+<div class="backup-options">
+
+<button class="backup-opt" onclick="exportTXT()">
+<span class="bo-icon">
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 3v10"></path><path d="M6.8 9 11 13.2 15.2 9"></path><path d="M4.5 18h13"></path></svg>
+</span>
+<span class="bo-title">Desar</span>
+<span class="bo-sub">Descarrega un fitxer amb totes les dades actuals</span>
+</button>
+
+<button class="backup-opt" onclick="document.getElementById('importFile').click()">
+<span class="bo-icon">
+<svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 13.2V3.2"></path><path d="M6.8 7 11 2.8 15.2 7"></path><path d="M4.5 18h13"></path></svg>
+</span>
+<span class="bo-title">Carregar</span>
+<span class="bo-sub">Restaura les dades des d'un fitxer guardat</span>
+</button>
+
+</div>
+
+<div class="session-row" id="sessionRow">
+<span class="session-info">Sessió iniciada — <strong id="sessionEmail"></strong></span>
+<button class="session-logout" onclick="doLogout()">Tancar sessió</button>
+</div>
+
+</div>
+
+</div>
+
+<div class="modal" id="importModal">
+
+<div class="modal-content" style="max-width:640px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+
+<h2 style="font-size:26px;font-weight:700;">
+Importar dades
+</h2>
+
+<button class="modal-close" onclick="closeImportModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div id="importInputArea">
+<p class="small" style="margin-bottom:16px;">
+Enganxa el text del correu amb les dades. Es crearan els cursos, mòduls i classes automàticament (s'afegeixen a les dades actuals).
+</p>
+
+<textarea id="importText" class="import-textarea" placeholder="Enganxa aquí el text del correu..." oninput="resetImportAnalysis()"></textarea>
+</div>
+
+<div id="importPreview" class="hidden"></div>
+
+<div style="display:flex;gap:10px;margin-top:16px;">
+<button class="btn gray hidden" id="importBackBtn" style="flex:0 0 auto;" onclick="resetImportAnalysis()">
+Enrere
+</button>
+<button class="btn gray" id="importAnalyzeBtn" style="flex:1;" onclick="analyzeImport()">
+Analitzar
+</button>
+<button class="btn green hidden" id="importConfirmBtn" style="flex:1;" onclick="confirmImport()">
+Importar
+</button>
+</div>
+
+</div>
+
+</div>
+
+<div class="modal" id="monthPickerModal">
+
+<div class="modal-content" style="max-width:380px;">
+
+<div class="year-stepper">
+<button class="btn gray" onclick="pickerYearStep(-1)">←</button>
+<div class="year-value" id="pickerYearValue">2026</div>
+<button class="btn gray" onclick="pickerYearStep(1)">→</button>
+</div>
+
+<div class="month-grid" id="monthGrid"></div>
+
+<button id="todayBtn" class="btn green" style="width:100%;margin-top:6px;" onclick="goToday()">
+Anar a avui
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="dayModal">
+
+<div class="modal-content" style="max-width:560px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+
+<h2 id="dayModalTitle" style="font-size:24px;font-weight:700;letter-spacing:-0.02em;">
+Dia
+</h2>
+
+<button class="modal-close" onclick="closeDayModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="day-list" id="dayList"></div>
+
+<button class="btn green" style="width:100%;" onclick="addCourseFromDay()">
+<svg width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 4v14"></path><path d="M4 11h14"></path></svg>
+Afegir curs
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="invoiceModal">
+
+<div class="modal-content">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 style="font-size:26px;font-weight:700;">
+Generar factura
+</h2>
+
+<button class="modal-close" onclick="closeInvoiceModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2">
+
+<div>
+<div class="small">Client factura</div>
+<select id="invoiceClient"></select>
+</div>
+
+<div>
+<label>Emissor</label>
+<select id="invoiceIssuer"></select>
+</div>
+
+<div>
+<div class="small">Idioma factura</div>
+<select id="invoiceLanguage">
+<option value="ca">Català</option>
+<option value="es">Castellà</option>
+</select>
+</div>
+
+<div>
+<div class="small">IVA (%)</div>
+<input type="number" id="invoiceIVA" value="21">
+</div>
+
+<div>
+<div class="small">IRPF (%)</div>
+<input type="number" id="invoiceIRPF" value="15">
+</div>
+
+</div>
+
+<button class="btn blue" style="margin-top:20px;width:100%;" onclick="generateInvoicePDF()">
+Generar PDF
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="courseModal">
+
+<div class="modal-content" style="max-width:480px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="courseModalTitle" style="font-size:26px;font-weight:700;">
+Afegir curs
+</h2>
+
+<button class="modal-close" onclick="closeCourseModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div style="margin-bottom:16px;">
+<div class="small">Nom</div>
+<input type="text" id="courseName" placeholder="Nom curs">
+</div>
+
+<div class="grid2" style="margin-bottom:22px;">
+
+<div>
+<div class="small">Preu</div>
+<div class="input-wrapper">
+<input type="number" id="coursePrice" class="input-with-suffix" placeholder="0">
+<div class="input-suffix">€/h</div>
+</div>
+</div>
+
+<div>
+<div class="small">Color</div>
+<input type="color" id="courseColor">
+</div>
+
+</div>
+
+<button class="btn green" style="width:100%;" onclick="saveCourse()">
+Desar
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="clientModal">
+
+<div class="modal-content" style="max-width:560px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="clientModalTitle" style="font-size:26px;font-weight:700;">
+Afegir client
+</h2>
+
+<button class="modal-close" onclick="closeClientModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2" style="margin-bottom:16px;">
+<input type="text" id="clientName" placeholder="Nom">
+<input type="text" id="clientNif" placeholder="NIF/CIF">
+</div>
+
+<div class="grid2" style="margin-bottom:22px;">
+<input type="text" id="clientAddress" placeholder="Adreça">
+<input type="text" id="clientCity" placeholder="Ciutat">
+</div>
+
+<button class="btn green" style="width:100%;" onclick="saveClient()">
+Desar
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="issuerModal">
+
+<div class="modal-content">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="issuerModalTitle" style="font-size:26px;font-weight:700;">
+Afegir emissor
+</h2>
+
+<button class="modal-close" onclick="closeIssuerModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2" style="margin-bottom:12px;">
+<input type="text" id="issuerName" placeholder="Nom">
+<input type="text" id="issuerNif" placeholder="NIF">
+</div>
+
+<div class="grid2" style="margin-bottom:12px;">
+<input type="text" id="issuerAddress" placeholder="Adreça">
+<input type="text" id="issuerCity" placeholder="Ciutat">
+</div>
+
+<div class="grid2" style="margin-bottom:12px;">
+<input type="text" id="issuerPostal" placeholder="Codi postal">
+<input type="text" id="issuerPhone" placeholder="Telèfon">
+</div>
+
+<div class="grid2" style="margin-bottom:12px;">
+<input type="email" id="issuerEmail" placeholder="Email">
+<input type="text" id="issuerIBAN" placeholder="IBAN">
+</div>
+
+<div style="margin-bottom:22px;">
+<input type="text" id="issuerSWIFT" placeholder="SWIFT">
+</div>
+
+<button id="issuerSubmitBtn" class="btn green" style="width:100%;" onclick="addIssuer()">
+Afegir emissor
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="expenseModal">
+
+<div class="modal-content" style="max-width:560px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="expenseModalTitle" style="font-size:26px;font-weight:700;">
+Afegir despesa
+</h2>
+
+<button class="modal-close" onclick="closeExpenseModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2" style="margin-bottom:14px;">
+<label class="field-lbl">Data<input type="date" id="expDate"></label>
+<label class="field-lbl">Nº factura<input type="text" id="expNumber" placeholder="Nº factura"></label>
+</div>
+
+<div class="grid2" style="margin-bottom:14px;">
+<label class="field-lbl">Proveïdor<input type="text" id="expSupplier" placeholder="Nom o raó social"></label>
+<label class="field-lbl">CIF/NIF<input type="text" id="expNif" placeholder="CIF/NIF"></label>
+</div>
+
+<div style="margin-bottom:14px;">
+<label class="field-lbl">Categoria<select id="expCategory"></select></label>
+</div>
+
+<div class="grid3" style="margin-bottom:22px;">
+<label class="field-lbl">Base (€)<input type="number" step="0.01" id="expBase" placeholder="0.00" oninput="updateExpensePreview()"></label>
+<label class="field-lbl">% IVA<input type="number" step="0.01" id="expIva" value="21" oninput="updateExpensePreview()"></label>
+<label class="field-lbl">Total<input type="text" id="expTotalView" disabled></label>
+</div>
+
+<button id="expenseSubmitBtn" class="btn green" style="width:100%;" onclick="saveExpense()">
+Desar despesa
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="invoiceRecordModal">
+
+<div class="modal-content" style="max-width:560px;">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="invoiceRecordTitle" style="font-size:26px;font-weight:700;">
+Afegir factura
+</h2>
+
+<button class="modal-close" onclick="closeInvoiceRecordModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2" style="margin-bottom:14px;">
+<label class="field-lbl">Data<input type="date" id="invRecDate"></label>
+<label class="field-lbl">Nº factura<input type="text" id="invRecNumber" placeholder="Nº"></label>
+</div>
+
+<div class="grid2" style="margin-bottom:14px;">
+<label class="field-lbl">Client<input type="text" id="invRecClient" placeholder="Nom o raó social"></label>
+<label class="field-lbl">CIF/NIF<input type="text" id="invRecNif" placeholder="CIF/NIF"></label>
+</div>
+
+<div class="grid3" style="margin-bottom:14px;">
+<label class="field-lbl">Base (€)<input type="number" step="0.01" id="invRecBase" placeholder="0.00" oninput="updateInvoiceRecordPreview()"></label>
+<label class="field-lbl">% IVA<input type="number" step="0.01" id="invRecIva" value="0" oninput="updateInvoiceRecordPreview()"></label>
+<label class="field-lbl">% IRPF<input type="number" step="0.01" id="invRecIrpf" value="15" oninput="updateInvoiceRecordPreview()"></label>
+</div>
+
+<div style="margin-bottom:22px;">
+<label class="field-lbl">Total<input type="text" id="invRecTotalView" disabled></label>
+</div>
+
+<button id="invoiceRecordSubmitBtn" class="btn green" style="width:100%;" onclick="saveInvoiceRecord()">
+Desar factura
+</button>
+
+</div>
+
+</div>
+
+<div class="modal" id="classModal">
+
+<div class="modal-content">
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+
+<h2 id="classModalTitle" style="font-size:26px;font-weight:700;">
+Afegir classe
+</h2>
+
+<button class="modal-close" onclick="closeClassModal()" title="Tancar">
+<svg width="16" height="16" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5.5 5.5l11 11"></path><path d="M16.5 5.5l-11 11"></path></svg>
+</button>
+
+</div>
+
+<div class="grid2" style="margin-bottom:16px;">
+
+<div>
+<div class="small">Data</div>
+<input type="date" id="modalClassDate">
+</div>
+
+<div>
+<div class="small">Curs</div>
+<select id="modalClassCourse" onchange="populateModuleSelect()"></select>
+</div>
+
+</div>
+
+<div id="moduleField" class="hidden" style="margin-bottom:16px;">
+<div class="small">Mòdul</div>
+<select id="modalClassModule"></select>
+</div>
+
+<div class="grid3">
+
+<div>
+<div class="small">Hora inici</div>
+<input type="time" id="modalStartTime">
+</div>
+
+<div>
+<div class="small">Hora final</div>
+<input type="time" id="modalEndTime">
+</div>
+
+<div style="display:flex;align-items:end;">
+<button class="btn green" style="width:100%;" onclick="addClassFromModal()">
+Desar
+</button>
+</div>
+
+</div>
+
+</div>
+
+<div id="snackbar" class="snackbar" role="status" aria-live="polite">
+<svg class="snack-check" width="18" height="18" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11.5l4 4 9-9.5"></path></svg>
+<span id="snackText"></span>
+</div>
+
+<script src="logo-badge.js?v=2"></script>
+<script src="app.js?v=62"></script>
+
+<!-- Firebase (compat) + sincronització al núvol -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="firebase-sync.js"></script>
+
+<script>
+if("serviceWorker" in navigator){
+window.addEventListener("load",function(){
+navigator.serviceWorker.register("service-worker.js").catch(function(){});
+});
+}
+</script>
+
+</body>
+</html>
