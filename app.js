@@ -661,25 +661,24 @@ if(hm&&place&&!/^total$/i.test(place)){
 const date=`${dm[3]}-${dm[2].padStart(2,"0")}-${dm[1].padStart(2,"0")}`;
 const hours=parseFloat(hoursLine.replace(",","."));
 const name=place.trim();
-(byPlace[name]=byPlace[name]||[]).push({date,hours});
-i+=3;
-// skip an optional teacher-name line right after the place
-if(nonBlankLines[i]&&!/^(\d{1,2}\/\d{1,2}\/\d{4}|total|facturat)$/i.test(nonBlankLines[i]))i++;
+// Consume the trailing lines of this row (teacher name, "Facturat"…) up to
+// the next date/total. If any says facturat/facturada, the class is JA
+// facturada i NO s'ha d'importar.
+let j=i+3, billed=false;
+while(nonBlankLines[j]&&!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(nonBlankLines[j])&&!/^total$/i.test(nonBlankLines[j])){
+if(/^facturad[ao]$|^facturat$/i.test(nonBlankLines[j].trim()))billed=true;
+j++;
+}
+if(!billed)(byPlace[name]=byPlace[name]||[]).push({date,hours});
+i=j;
 continue;
 }
 }
 i++;
 }
-const out=[];
-Object.entries(byPlace).forEach(([name,records])=>{
-const byHours={};
-records.forEach(r=>{(byHours[r.hours]=byHours[r.hours]||[]).push(r.date);});
-const modules=Object.entries(byHours).map(([hrs,dates])=>({
-name:"",dates,hours:null,start:"08:00",end:fmtTime(8+parseFloat(hrs))
-}));
-out.push({name,price:null,modules,_fromTable:true});
-});
-return out;
+// Keep raw {date,hours} records; module grouping happens after we know each
+// date's module (from the description blocks below the table).
+return Object.entries(byPlace).map(([name,records])=>({name,price:null,records,_fromTable:true}));
 }
 
 function analyzeImport(){
@@ -762,20 +761,38 @@ continue;
 pushMod();
 
 const tableCourses=parseTableClasses(lines.filter(l=>l));
-tableCourses.forEach(tc=>parsedCourses.push(tc));
 
-// Un mateix dia sovint apareix a la taula diària I al bloc "Impartició"
-// corresponent (la taula és el registre real; l'"Impartició" només el resumeix
-// per factura) — evitem comptar-lo dues vegades donant prioritat a la taula.
-const tableDates=new Set();
-parsedCourses.forEach(c=>{if(c._fromTable)c.modules.forEach(m=>m.dates.forEach(d=>tableDates.add(d)));});
+// La TAULA sempre mana: són exactament els dies i classes a importar, ni un de
+// més ni un de menys. Els blocs "Impartició" de sota NO afegeixen classes —
+// només descriuen a quin mòdul pertany cada classe de la taula. Construïm un
+// mapa data→mòdul a partir de les descripcions i l'apliquem a la taula.
+if(tableCourses.length){
+const dateToModule={};
 parsedCourses.forEach(c=>{
-if(c._fromTable)return;
-c.modules.forEach(m=>{m.dates=m.dates.filter(d=>!tableDates.has(d));});
-c.modules=c.modules.filter(m=>m.dates.length);
+c.modules.forEach(m=>{
+if(!m.name)return;
+m.dates.forEach(d=>{if(!dateToModule[d])dateToModule[d]=m.name;});
 });
+});
+const built=tableCourses.map(tc=>{
+const groups={};
+tc.records.forEach(r=>{
+const modName=dateToModule[r.date]||"";
+const key=modName+"|"+r.hours;
+(groups[key]=groups[key]||{name:modName,hours:r.hours,dates:[]}).dates.push(r.date);
+});
+const modules=Object.values(groups).map(g=>({
+name:g.name,dates:g.dates,hours:null,start:"08:00",end:fmtTime(8+g.hours)
+}));
+return {name:tc.name,price:null,modules,_fromTable:true};
+});
+parsedCourses.length=0;
+built.forEach(c=>parsedCourses.push(c));
+}
+// Si el correu NO porta cap taula, es mantenen els blocs "Impartició" com abans
+// (l'única font de classes en aquest cas).
 for(let i=parsedCourses.length-1;i>=0;i--){
-if(!parsedCourses[i]._fromTable&&!parsedCourses[i].modules.length)parsedCourses.splice(i,1);
+if(!parsedCourses[i].modules.length)parsedCourses.splice(i,1);
 }
 
 // Build class plan

@@ -1,11 +1,11 @@
 /* Service worker — Factures Marta PWA
    Precache de l'app per funcionar sense connexió. */
-var CACHE = "factures-v27";
+var CACHE = "factures-v28";
 
 var SHELL = [
   "./",
   "./app.html",
-  "./app.js?v=62",
+  "./app.js?v=64",
   "./styles.css?v=93",
   "./ds-tokens.css?v=1",
   "./logo-badge.js?v=2",
